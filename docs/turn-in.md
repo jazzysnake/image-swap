@@ -38,33 +38,36 @@ The following section will contain my solution to the task.
 
 #### Confidentiality
 
-- Users can only access their own payment info
+- Users can only access their own payment info.
 - Users can only purchase images for themselves.
 
 #### Integrity
 
 - Administrators can edit or delete the details of images uploaded by users.
 - Users can view and edit the details of images they have uploaded. 
+- The integrity of uploaded CAFF files must be validated
 
 #### Availability
 
-- Users can view and download all images.
+- Users can view and download all images in an open format.
+- Users can view and download all images they own in CAFF format.
 - Administrators can view and download all images.
 
 #### Authentication
 
 - Users can create and register a simple account.
+- Users must provide an adequetly complex password upon registration.
 - Administrator accounts are created at deployment.
-- No user identification is required to view or download images.
-- In order to access functions besides downloading and viewing images, logging in is required.
+- No user identification is required to view or download images in an open format.
+- In order to access functions besides downloading and viewing open-format images, logging in is required.
 - Following a successful login users are given a unique session id.
 - Followin a logout, the user's active session id is invalidated.
 
 #### Authorization
 
-- Functions available without a role: view and download images.
-- Functions accessible with user role: buy and sell images, upload and download images
-- Functions accessible with admin role: buy and sell images, upload and download images, edit and delete image data
+- Functions available without a role: view and download open-format images.
+- Functions accessible with user role: buy and sell images, upload and download images (owned ones in CAFF format)
+- Functions accessible with admin role: buy and sell images, upload and download images, edit and delete image data (in all formats)
 
 #### Auditing
 
@@ -127,11 +130,19 @@ The following section will contain my solution to the task.
 
 ![frontend component diagram](diagrams/frontend-component.png)
 
-### System boundary and Data flow diagram
+### System boundary and Data flow diagrams
 
-![data flow and system boundary diagram](diagrams/data-flow.png)
+#### System boundary diagram
+
+![data flow diagram](diagrams/system-boundaries.png)
+
+#### Data flow diagram
+
+![system boundary diagram](diagrams/data-flow.png)
 
 ### Sequence Diagrams
+
+All events are logged according to the security requirements, but the logging calls are omitted for readability.
 
 #### Download image
 
@@ -164,5 +175,5 @@ The following section will contain my solution to the task.
 
 #### Mobile and web client tests:
 - Test that clients handle data and user interactions properly.
-Check that clients are not sending sensitive data to the server, such as passwords or personal information.
+Check that clients are not sending sensitive data to the server, such as passwords in cleartext or personal information.
 - Test that clients are using encryption and SSL/TLS properly when communicating with the server.
