@@ -26,7 +26,7 @@ namespace CAFF {
 
     std::optional<Block> readBlock(std::istream &file);
 
-    void printBlockInfo(const Block, bool truncateOutput);
+    void printBlockInfo(const Block&, bool truncateOutput);
 
     struct HeaderBlock {
         char magic[4];
@@ -39,9 +39,9 @@ namespace CAFF {
     };
     const char HEADER_MAGIC[4] = {'C', 'A', 'F', 'F'};
 
-    std::optional<HeaderBlock> parseHeaderBlock(const Block);
+    std::optional<HeaderBlock> parseHeaderBlock(const Block&);
 
-    void printHeaderInfo(const HeaderBlock);
+    void printHeaderInfo(const HeaderBlock&);
 
     struct CreditsBlock {
         util::Date creationDate;
@@ -54,7 +54,7 @@ namespace CAFF {
                 ): creationDate(date), creatorSize(size), creator(creator) {}
     };
 
-    std::optional<CreditsBlock> parseCreditsBlock(const Block);
+    std::optional<CreditsBlock> parseCreditsBlock(const Block&);
     void printCreditsBlockInfo(const CreditsBlock& credits);
 
     struct AnimationBlock {
@@ -64,9 +64,9 @@ namespace CAFF {
             duration(_duration),  ciffData(_ciffData) {}
     };
 
-    std::optional<AnimationBlock> parseAnimationBlock(const Block);
+    std::optional<AnimationBlock> parseAnimationBlock(const Block&);
 
-    void printAnimationBlockInfo(const AnimationBlock block, bool truncateOutput);
+    void printAnimationBlockInfo(const AnimationBlock& block, bool truncateOutput);
 }
 
 

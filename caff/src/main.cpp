@@ -39,5 +39,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Invalid option: " << option << std::endl;
         return -1;
     }
+    std::cout << "Done!" << std::endl;
     return 0;
 }

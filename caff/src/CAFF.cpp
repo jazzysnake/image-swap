@@ -10,7 +10,7 @@
 #include <cstring>
 #include <sstream>
 
-void CAFF::printBlockInfo(const Block block, bool truncateOutput) {
+void CAFF::printBlockInfo(const Block& block, bool truncateOutput) {
     std::cout << "###Block obj###" << '\n';
     std::cout << "\tid: " << static_cast<int>(block.id) << '\n';
     std::cout << "\tsize: " << block.size << '\n';
@@ -32,7 +32,7 @@ void CAFF::printBlockInfo(const Block block, bool truncateOutput) {
     std::cout << "\n#############\n";
 }
 
-void CAFF::printHeaderInfo(const HeaderBlock header) {
+void CAFF::printHeaderInfo(const HeaderBlock& header) {
     std::cout << "###HeaderBlock obj###" << '\n';
     std::cout << "\tmagic: " << header.magic << '\n';
     std::cout << "\tsize: " << header.size << '\n';
@@ -40,19 +40,25 @@ void CAFF::printHeaderInfo(const HeaderBlock header) {
     std::cout << "#############\n";
 }
 
-std::optional<CAFF::HeaderBlock> CAFF::parseHeaderBlock(const Block block) {
+std::optional<CAFF::HeaderBlock> CAFF::parseHeaderBlock(const Block& block) {
     const char* data = block.data.data();
     char magic[4];
     std::memcpy(magic, data, 4);
+    if(!util::compareArrays(magic, CAFF::HEADER_MAGIC, 4)){
+        std::cerr << "Header mismatch!" << std::endl;
+        return std::nullopt;
+    }
     uint64_t size = util::convertLittleEndianToUint(&data[4]);
     uint64_t numPics = util::convertLittleEndianToUint(&data[12]);
 
-    if(size!=block.size || !util::compareArrays(magic, CAFF::HEADER_MAGIC, 4)){
+    if(size!=block.size){
+        std::cerr << "Block size mismatch!" << std::endl;
         return std::nullopt;
     }
 
     HeaderBlock header(magic, size, numPics);
-    printHeaderInfo(header);
+    //TODO debug print
+    //printHeaderInfo(header);
     return header;
 }
 
@@ -65,28 +71,43 @@ void CAFF::printCreditsBlockInfo(const CAFF::CreditsBlock& credits) {
     std::cout << "#############\n";
 }
 
-std::optional<CAFF::CreditsBlock> CAFF::parseCreditsBlock(const CAFF::Block block){
+std::optional<CAFF::CreditsBlock> CAFF::parseCreditsBlock(const CAFF::Block& block){
     const char* data = block.data.data();
     char dateBytes[6];
     std::memcpy(dateBytes, data, 6);
     util::Date date = util::parseDate(dateBytes);
-
+    if(!util::validateDate(
+                date.year,
+                date.month,
+                date.day,
+                date.hour,
+                date.minute)){
+        std::cerr << "Invalid creation date!" << std::endl;
+        return std::nullopt;
+    }
     uint64_t creatorSize = util::convertLittleEndianToUint(&data[6]);
+    if(creatorSize == 0 || creatorSize > block.size){
+        std::cerr << "Invalid creator size!" << std::endl;
+        return std::nullopt;
+    }
 
-    char creatorBytes[creatorSize];
-    std::memcpy(creatorBytes, (data+6+8), creatorSize);
     CAFF::CreditsBlock creditBlock(
             date,
             creatorSize,
-            std::string(creatorBytes, creatorSize)
+            std::string(&data[14], creatorSize)
             );
-    printCreditsBlockInfo(creditBlock);
+    //TODO debug print
+    //printCreditsBlockInfo(creditBlock);
     return creditBlock;
 }
 
-std::optional<CAFF::AnimationBlock> CAFF::parseAnimationBlock(const CAFF::Block block){
+std::optional<CAFF::AnimationBlock> CAFF::parseAnimationBlock(const CAFF::Block& block){
     const char* data = block.data.data();
     uint64_t duration = util::convertLittleEndianToUint(data);
+    if(duration == 0){
+        std::cerr << "Animation duration can't be 0!" << std::endl;
+        return std::nullopt;
+    }
 
     uint64_t ciffSize = block.size-sizeof(uint64_t);
     auto ciffData = std::vector<char>(ciffSize);
@@ -96,7 +117,7 @@ std::optional<CAFF::AnimationBlock> CAFF::parseAnimationBlock(const CAFF::Block 
     return animBlock;
 }
 
-void CAFF::printAnimationBlockInfo(const AnimationBlock block, bool truncateOutput) {
+void CAFF::printAnimationBlockInfo(const AnimationBlock& block, bool truncateOutput) {
     std::cout << "###AnimationBlock obj###" << '\n';
     std::cout << "\tduration: " << block.duration << '\n';
     std::cout << "\tciffData:\n";
@@ -118,12 +139,17 @@ void CAFF::printAnimationBlockInfo(const AnimationBlock block, bool truncateOutp
 std::optional<CAFF::Block> CAFF::readBlock(std::istream &file){
     uint8_t id;
     file.read(reinterpret_cast<char*>(&id), sizeof(uint8_t));
+    if(id > 3 || id < 1){
+        std::cerr << "Unknown header id" << std::endl;
+        return std::nullopt;
+    }
     char sizeBytes[8];
     file.read(sizeBytes, 8);
     uint64_t size = util::convertLittleEndianToUint(sizeBytes);
 
     std::optional<std::vector<char>> res = util::readBytes(file, size);
     if(!res.has_value()){
+        std::cerr << "coud not read from file" << std::endl;
         return std::nullopt;
     }
     return Block(BlockID(id), size, res.value());
@@ -141,8 +167,14 @@ int CAFF::convertFile(const std::string inPath, const std::string outPath) {
         return -1;
     }
     Block block1 = res1.value();
-    printBlockInfo(block1, false);
-    parseHeaderBlock(block1);
+    //TODO debug print
+    //printBlockInfo(block1, false);
+    auto headerOpt = parseHeaderBlock(block1);
+    if(!headerOpt.has_value()){
+        std::cerr << "Failed to parse header" << std::endl;
+        return -1;
+    }
+
 
     auto res2 = readBlock(inputFile);
     if(!res2.has_value()){
@@ -150,7 +182,8 @@ int CAFF::convertFile(const std::string inPath, const std::string outPath) {
         return -1;
     }
     Block block2 = res2.value();
-    printBlockInfo(block2, false);
+    //TODO debug print
+    //printBlockInfo(block2, false);
     parseCreditsBlock(block2);
 
     auto res3 = readBlock(inputFile);
@@ -159,10 +192,22 @@ int CAFF::convertFile(const std::string inPath, const std::string outPath) {
         return -1;
     }
     Block block3 = res3.value();
-    printBlockInfo(block3, true);
-    AnimationBlock animBlock = parseAnimationBlock(block3).value();
-    printAnimationBlockInfo(animBlock, true);
-    CIFF::CIFF ciff = CIFF::parseCIFF(animBlock.ciffData.data()).value();
+    //TODO debug print
+    //printBlockInfo(block3, true);
+    auto animOpt = parseAnimationBlock(block3);
+    if(!animOpt.has_value()){
+        std::cerr << "Failed to parse animation block!" << std::endl;
+        return -1;
+    }
+    AnimationBlock animBlock = animOpt.value();
+    //TODO debug print
+    //printAnimationBlockInfo(animBlock, true);
+    auto ciffOpt = CIFF::parseCIFF(animBlock.ciffData.data(), animBlock.ciffData.size());
+    if(!ciffOpt.has_value()){
+        std::cerr << "Malformed CIFF in animation block!" << std::endl;
+        return -1;
+    }
+    CIFF::CIFF ciff = ciffOpt.value();
     CIFF::toWebp(ciff, outPath);
     return 0;
 }

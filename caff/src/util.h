@@ -45,6 +45,7 @@ namespace util {
     bool validatePath(const std::string& path);
 
     std::optional<std::vector<char>> readFile(const std::string& filePath);
+    bool validateDate(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute);
 }
 
 #endif

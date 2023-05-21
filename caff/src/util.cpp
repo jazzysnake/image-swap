@@ -29,6 +29,20 @@ util::Date util::parseDate(char byteArray[6]){
 
     return Date(year, month, day, hour, minute);
 }
+bool util::validateDate(
+        uint16_t year,
+        uint8_t month,
+        uint8_t day,
+        uint8_t hour,
+        uint8_t minute
+        ) {
+    return !(year < 1970 || year > 2050 ||
+        month<1 || month>12 ||
+        day>31 || day<1 || 
+        hour>24 || hour<1 || 
+        minute > 60 || minute<1);
+}
+
 void util::printDate(const util::Date& date) {
     std::cout << "Date: " << date.year << "-" << static_cast<int>(date.month) << "-"
               << static_cast<int>(date.day) << " ";

@@ -31,7 +31,7 @@ namespace CIFF {
         }
     };
     
-    std::optional<CIFF> parseCIFF(const char* data);
+    std::optional<CIFF> parseCIFF(const char* data, const uint64_t size);
 
     void printCIFFInfo(const CIFF ciff);
 
